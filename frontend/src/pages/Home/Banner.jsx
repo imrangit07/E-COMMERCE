@@ -3,7 +3,7 @@ import React from "react";
 const Banner = ({ banner }) => {
   return (
     <div className="w-full">
-      <div className="w-full aspect-[16/5] sm:aspect-[16/4] md:aspect-[16/3.5] lg:aspect-[16/3] overflow-hidden">
+      <div className="w-full h-48 sm:h-64 md:h-80 lg:h-96 overflow-hidden">
         <img
           src={banner}
           alt="Banner"
