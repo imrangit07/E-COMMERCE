@@ -7,7 +7,7 @@ import Banner from "./Banner";
 import Shape from "./Shape";
 import banner from "/banner/FLR1IN.webp";
 import banner1 from "/banner/ban-buy1-get1.webp";
-import dobanner from "/banner/do-more-be-more.webp";
+import dobanner from "/banner/DoMore.webp";
 import Hero from "./Hero";
 
 const Home = () => {

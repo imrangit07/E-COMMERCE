@@ -81,9 +81,9 @@ const Header = () => {
   };
 
   return (
-    <header className="sticky top-0 z-50 bg-white/80 shadow-sm backdrop-blur-md">
-      <div className="container mx-auto px-4 md:px-6">
-        <div className="flex h-16 items-center justify-between gap-4">
+    <header className="sticky top-0 z-50  bg-white/80 shadow-sm backdrop-blur-md">
+      <div className="container  mx-auto px-4 md:px-6">
+        <div className=" flex h-16 items-center justify-between gap-4">
           {/* Logo */}
           <div className="flex items-center flex-shrink-0">
             <img src={headerLogo} alt="Opticart Logo" className="h-8 w-auto object-contain" />
@@ -139,7 +139,7 @@ const Header = () => {
       )}
 
       {/* Mobile Slide‑in (unchanged) */}
-      <div className={`fixed inset-0 z-[100] bg-white transform transition-transform duration-300 ease-in-out ${isMenuOpen ? "translate-x-0" : "translate-x-full"} flex flex-col h-screen w-full overflow-y-auto`}>
+      <div className={`fixed inset-0 z-[100] bg-white transform transition-transform duration-300 ease-in-out ${isMenuOpen ? "translate-x-0" : "translate-x-full"} flex flex-col h-screen w-full overflow-y-auto `}>
         <div className="flex items-center justify-between px-4 py-4 border-b border-gray-100">
           <div className="flex items-center gap-2">
             <img src={headerLogo} alt="Opticart Logo" className="h-8 w-auto object-contain" />
@@ -149,7 +149,7 @@ const Header = () => {
             <X size={24} />
           </button>
         </div>
-        <div className="flex-1 px-6 pb-8 flex flex-col gap-6 overflow-y-auto">
+        <div className="flex-1 px-6 pb-8 flex flex-col gap-6 overflow-y-auto ">
           <div className="flex items-center rounded-full border border-gray-200 bg-gray-50 px-4 py-2 focus-within:border-[#e79237] focus-within:ring-2 focus-within:ring-[#e79237]/30">
             <Search size={20} className="text-gray-400 mr-3" />
             <input type="text" placeholder="Search for glasses..." className="w-full bg-transparent text-sm outline-none placeholder:text-gray-400" />

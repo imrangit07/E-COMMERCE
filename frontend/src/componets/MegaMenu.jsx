@@ -30,34 +30,38 @@ const MegaMenu = ({ activeNav, navData, onClose }) => {
                 </h3> */}
                 <div className="space-y-4">
                   {cat.brands.map((brand, i) => (
-                    <div
-                      key={i}
-                      className="group cursor-pointer flex items-start gap-3"
-                    >
-                      {/* Brand thumbnail */}
-                      {brand.image && (
+                    <div key={i} className="group cursor-pointer">
+                      {brand.image ? (
                         <img
                           src={brand.image}
-                          alt={brand.name}
-                          className="w-12 h-12 object-contain rounded-md border border-gray-100 flex-shrink-0"
+                          alt={brand.name || "Brand"}
+                          className="w-full h-full object-contain rounded-md flex-shrink-0"
                         />
-                      )}
-                      <div className="flex-1">
-                        <div className="flex items-center justify-between">
-                          <span className="font-semibold text-gray-800 group-hover:text-[#e79237] transition-colors">
-                            {brand.name}
-                          </span>
-                          <span className="text-xs font-medium text-[#e79237] bg-orange-50 px-2 py-0.5 rounded-full">
-                            {brand.price}
-                          </span>
+                      ) : brand.reading ? (
+                        <div className="flex flex-wrap gap-2">
+                          {brand.reading.map((power, pIdx) => {
+                            if (power === "view all") {
+                              return (
+                                <a
+                                  key={pIdx}
+                                  href="#"
+                                  className="px-5 py-3 bg-gray-100 text-gray-800 text-sm rounded-2xl hover:bg-gray-200 transition"
+                                >
+                                  View all <span>→</span>
+                                </a>
+                              );
+                            }
+                            return (
+                              <span
+                                key={pIdx}
+                                className="px-5 py-3 bg-gray-100 text-gray-800 text-sm rounded-2xl hover:bg-gray-200 transition"
+                              >
+                                +{power}
+                              </span>
+                            );
+                          })}
                         </div>
-                        {brand.sub && (
-                          <p className="text-xs text-gray-500 mt-0.5">
-                            {brand.sub}
-                          </p>
-                        )}
-                        <div className="h-px bg-gray-100 mt-2 group-hover:bg-[#e79237]/30 transition-colors"></div>
-                      </div>
+                      ) : null}
                     </div>
                   ))}
                 </div>
