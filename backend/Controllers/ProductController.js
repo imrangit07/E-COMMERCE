@@ -1,0 +1,526 @@
+import { Product } from "../Models/ProductModel.js";
+import AsyncErrors from "../Middlewares/AsyncErrors.js";
+
+// /api/products/create-product
+const createProduct = AsyncErrors(async (req, res) => {
+  const {
+    productName,
+    brand,
+    category,
+    subCategory,
+    gender,
+    productCode,
+    description,
+
+    // Frame
+    frameType,
+    frameShape,
+    frameMaterial,
+    frameColor,
+    rimType,
+
+    // Lens
+    lensType,
+    lensMaterial,
+    lensColor,
+    coating,
+    uvProtection,
+    blueLightProtection,
+
+    // Dimensions
+    frameWidth,
+    lensWidth,
+    bridgeWidth,
+    templeLength,
+
+    // Price
+    mrp,
+    sellingPrice,
+
+    // Inventory
+    sku,
+    stock,
+
+    // Images
+    thumbnail,
+    images,
+
+    // Flags
+    isFeatured,
+    isBestSeller,
+    isNewArrival,
+    isActive,
+
+    // SEO
+    slug,
+    metaTitle,
+    metaDescription,
+    keywords,
+  } = req.body;
+
+  // Required field validation
+  if (!productName || !brand || !category || !mrp || !sellingPrice) {
+    return res.status(400).json({
+      success: false,
+      message:
+        "productName, brand, category, mrp and sellingPrice are required",
+    });
+  }
+
+  // MRP validation
+  if (sellingPrice > mrp) {
+    return res.status(400).json({
+      success: false,
+      message: "Selling price cannot be greater than MRP",
+    });
+  }
+
+  // Check duplicate productCode
+  if (productCode) {
+    const existingProductCode = await Product.findOne({
+      productCode,
+    });
+
+    if (existingProductCode) {
+      return res.status(409).json({
+        success: false,
+        message: "Product code already exists",
+      });
+    }
+  }
+
+  // Check duplicate SKU
+  if (sku) {
+    const existingSKU = await Product.findOne({
+      sku,
+    });
+
+    if (existingSKU) {
+      return res.status(409).json({
+        success: false,
+        message: "SKU already exists",
+      });
+    }
+  }
+
+  // Check duplicate slug
+  if (slug) {
+    const existingSlug = await Product.findOne({
+      slug,
+    });
+
+    if (existingSlug) {
+      return res.status(409).json({
+        success: false,
+        message: "Slug already exists",
+      });
+    }
+  }
+
+  // Calculate discount
+  const discount = Math.round(((mrp - sellingPrice) / mrp) * 100);
+
+  // Determine stock status
+  const stockStatus = Number(stock || 0) > 0 ? "IN STOCK" : "OUT OF STOCK";
+
+  // Create product
+  const product = new Product({
+    productName,
+    brand,
+    category,
+    subCategory,
+    gender,
+    productCode,
+    description,
+
+    // Frame
+    frameType,
+    frameShape,
+    frameMaterial,
+    frameColor,
+    rimType,
+
+    // Lens
+    lensType,
+    lensMaterial,
+    lensColor,
+    coating,
+    uvProtection,
+    blueLightProtection,
+
+    // Dimensions
+    frameWidth,
+    lensWidth,
+    bridgeWidth,
+    templeLength,
+
+    // Price
+    mrp,
+    sellingPrice,
+    discount,
+
+    // Inventory
+    sku,
+    stock: stock || 0,
+    stockStatus,
+
+    // Images
+    thumbnail,
+    images,
+
+    // Reviews
+    rating: 0,
+    reviewCount: 0,
+
+    // Flags
+    isFeatured,
+    isBestSeller,
+    isNewArrival,
+    isActive,
+
+    // SEO
+    slug,
+    metaTitle,
+    metaDescription,
+    keywords,
+  });
+
+  // Save product
+  const savedProduct = await product.save();
+
+  // Response
+  return res.status(201).json({
+    success: true,
+    message: "Product created successfully",
+    product: savedProduct,
+  });
+});
+
+// /api/products/:id
+const getSingleProduct = AsyncErrors(async (req, res) => {
+  const { id } = req.params;
+
+  const product = await Product.findById(id);
+
+  if (!product) {
+    return res.status(404).json({
+      success: false,
+      message: "Product not found",
+    });
+  }
+
+  res.status(200).json({
+    success: true,
+    product,
+  });
+});
+
+// /api/products/
+const getAllProduct = AsyncErrors(async (req, res) => {
+  const page = Number(req.query.page) || 1;
+  const limit = Number(req.query.limit) || 10;
+
+  const skip = (page - 1) * limit;
+
+  const products = await Product.find().skip(skip).limit(limit);
+
+  const totalProducts = await Product.countDocuments();
+
+  const totalPages = Math.ceil(totalProducts / limit);
+
+  res.status(200).json({
+    success: true,
+    count: products.length,
+    totalProducts,
+    totalPages,
+    currentPage: page,
+    limit,
+    products,
+  });
+});
+
+const updateProduct = AsyncErrors(async (req, res) => {
+  const { id } = req.params;
+
+  const updateData = {
+    ...req.body,
+  };
+
+  // Check if MRP and sellingPrice are being updated
+  if (updateData.mrp !== undefined && updateData.sellingPrice !== undefined) {
+    if (updateData.sellingPrice > updateData.mrp) {
+      return res.status(400).json({
+        success: false,
+        message: "Selling price cannot be greater than MRP",
+      });
+    }
+
+    // Calculate discount
+    updateData.discount = Math.round(
+      ((updateData.mrp - updateData.sellingPrice) / updateData.mrp) * 100,
+    );
+  }
+
+  // Update stock status
+  if (updateData.stock !== undefined) {
+    updateData.stockStatus =
+      Number(updateData.stock) > 0 ? "IN STOCK" : "OUT OF STOCK";
+  }
+
+  const product = await Product.findByIdAndUpdate(id, updateData, {
+    new: true,
+    runValidators: true,
+  });
+
+  if (!product) {
+    return res.status(404).json({
+      success: false,
+      message: "Product not found",
+    });
+  }
+
+  res.status(200).json({
+    success: true,
+    message: "Product updated successfully",
+    product,
+  });
+});
+
+const deleteProduct = AsyncErrors(async (req, res) => {
+  const { id } = req.params;
+
+  const product = await Product.findByIdAndUpdate(
+    id,
+    {
+      isActive: false,
+    },
+    {
+      new: true,
+      runValidators: true,
+    },
+  );
+
+  if (!product) {
+    return res.status(404).json({
+      success: false,
+      message: "Product not found",
+    });
+  }
+
+  res.status(200).json({
+    success: true,
+    message: "Product deleted successfully",
+    product,
+  });
+});
+
+const getProductById = AsyncErrors(async (req, res) => {
+  const { productId } = req.params;
+
+  const product = await Product.findOne({
+    productCode: productId,
+    isActive: true,
+  });
+
+  if (!product) {
+    return res.status(404).json({
+      success: false,
+      message: "Product not found",
+    });
+  }
+
+  res.status(200).json({
+    success: true,
+    product,
+  });
+});
+
+const searchProducts = AsyncErrors(async (req, res) => {
+  const {
+    keyword,
+    category,
+    gender,
+    brand,
+    frameShape,
+    frameMaterial,
+    frameColor,
+    lensType,
+    minPrice,
+    maxPrice,
+    uvProtection,
+    blueLightProtection,
+    isFeatured,
+    isBestSeller,
+    isNewArrival,
+    sort,
+    page = 1,
+    limit = 10,
+  } = req.query;
+
+  const currentPage = Math.max(Number(page) || 1, 1);
+  const productsPerPage = Math.min(Number(limit) || 10, 50);
+
+  const skip = (currentPage - 1) * productsPerPage;
+
+  const filter = {
+    isActive: true,
+  };
+
+  // Search
+  if (keyword) {
+    filter.$or = [
+      { productName: { $regex: keyword, $options: "i" } },
+      { brand: { $regex: keyword, $options: "i" } },
+      { category: { $regex: keyword, $options: "i" } },
+      { subCategory: { $regex: keyword, $options: "i" } },
+      { frameShape: { $regex: keyword, $options: "i" } },
+      { frameColor: { $regex: keyword, $options: "i" } },
+      { description: { $regex: keyword, $options: "i" } },
+    ];
+  }
+
+  // Category
+  if (category) {
+    filter.category = category.toUpperCase();
+  }
+
+  // Gender
+  if (gender) {
+    filter.gender = gender.toUpperCase();
+  }
+
+  // Brand
+  if (brand) {
+    filter.brand = {
+      $regex: brand,
+      $options: "i",
+    };
+  }
+
+  // Frame Shape
+  if (frameShape) {
+    filter.frameShape = frameShape.toUpperCase();
+  }
+
+  // Frame Material
+  if (frameMaterial) {
+    filter.frameMaterial = {
+      $regex: frameMaterial,
+      $options: "i",
+    };
+  }
+
+  // Frame Color
+  if (frameColor) {
+    filter.frameColor = {
+      $regex: frameColor,
+      $options: "i",
+    };
+  }
+
+  // Lens Type
+  if (lensType) {
+    filter.lensType = {
+      $regex: lensType,
+      $options: "i",
+    };
+  }
+
+  // Price Range
+  if (minPrice || maxPrice) {
+    filter.sellingPrice = {};
+
+    if (minPrice) {
+      filter.sellingPrice.$gte = Number(minPrice);
+    }
+
+    if (maxPrice) {
+      filter.sellingPrice.$lte = Number(maxPrice);
+    }
+  }
+
+  // UV Protection
+  if (uvProtection !== undefined) {
+    filter.uvProtection = uvProtection === "true";
+  }
+
+  // Blue Light Protection
+  if (blueLightProtection !== undefined) {
+    filter.blueLightProtection = blueLightProtection === "true";
+  }
+
+  // Featured
+  if (isFeatured !== undefined) {
+    filter.isFeatured = isFeatured === "true";
+  }
+
+  // Best Seller
+  if (isBestSeller !== undefined) {
+    filter.isBestSeller = isBestSeller === "true";
+  }
+
+  // New Arrival
+  if (isNewArrival !== undefined) {
+    filter.isNewArrival = isNewArrival === "true";
+  }
+
+  // Sorting
+  let sortOption = {};
+
+  switch (sort) {
+    case "price-low":
+      sortOption.sellingPrice = 1;
+      break;
+
+    case "price-high":
+      sortOption.sellingPrice = -1;
+      break;
+
+    case "rating":
+      sortOption.rating = -1;
+      break;
+
+    case "newest":
+      sortOption.createdAt = -1;
+      break;
+
+    case "oldest":
+      sortOption.createdAt = 1;
+      break;
+
+    case "popular":
+      sortOption.reviewCount = -1;
+      break;
+
+    default:
+      sortOption.createdAt = -1;
+  }
+
+  const [products, totalProducts] = await Promise.all([
+    Product.find(filter).sort(sortOption).skip(skip).limit(productsPerPage),
+
+    Product.countDocuments(filter),
+  ]);
+
+  const totalPages = Math.ceil(totalProducts / productsPerPage);
+
+  res.status(200).json({
+    success: true,
+    count: products.length,
+    totalProducts,
+    totalPages,
+    currentPage,
+    limit: productsPerPage,
+    products,
+  });
+});
+
+export {
+  createProduct,
+  getSingleProduct,
+  getAllProduct,
+  updateProduct,
+  deleteProduct,
+  getProductById,
+  searchProducts,
+};
