@@ -1,198 +1,118 @@
 import { Product } from "../Models/ProductModel.js";
 import AsyncErrors from "../Middlewares/AsyncErrors.js";
 
-// /api/products/create-product
 const createProduct = AsyncErrors(async (req, res) => {
-  const {
-    productName,
-    brand,
-    category,
-    subCategory,
-    gender,
-    productCode,
-    description,
+  const thumbnailFile = req.files?.thumbnail?.[0];
+
+  const imageFiles = req.files?.images || [];
+
+  if (!thumbnailFile) {
+    return res.status(400).json({
+      success: false,
+      message: "Thumbnail image is required",
+    });
+  }
+
+  // Product images required
+  if (imageFiles.length === 0) {
+    return res.status(400).json({
+      success: false,
+      message: "At least one product image is required",
+    });
+  }
+
+  const thumbnail = thumbnailFile.path;
+
+  const images = imageFiles.map((file) => file.path);
+
+  const thumbnailPublicId = thumbnailFile.filename;
+
+  const imagePublicIds = imageFiles.map((file) => file.filename);
+
+  const coating = Array.isArray(req.body.coating)
+    ? req.body.coating
+    : req.body.coating
+      ? [req.body.coating]
+      : [];
+
+  const keywords = Array.isArray(req.body.keywords)
+    ? req.body.keywords
+    : req.body.keywords
+      ? [req.body.keywords]
+      : [];
+
+  const product = await Product.create({
+    // Basic Information
+    productName: req.body.productName,
+    brand: req.body.brand,
+    category: req.body.category,
+    subCategory: req.body.subCategory,
+    gender: req.body.gender,
+
+    productCode: req.body.productCode,
+    description: req.body.description,
 
     // Frame
-    frameType,
-    frameShape,
-    frameMaterial,
-    frameColor,
-    rimType,
+    frameType: req.body.frameType,
+    frameShape: req.body.frameShape,
+    frameMaterial: req.body.frameMaterial,
+    frameColor: req.body.frameColor,
+    rimType: req.body.rimType,
 
     // Lens
-    lensType,
-    lensMaterial,
-    lensColor,
+    lensType: req.body.lensType,
+    lensMaterial: req.body.lensMaterial,
+    lensColor: req.body.lensColor,
+
     coating,
-    uvProtection,
-    blueLightProtection,
+
+    uvProtection: req.body.uvProtection === "true",
+
+    blueLightProtection: req.body.blueLightProtection === "true",
 
     // Dimensions
-    frameWidth,
-    lensWidth,
-    bridgeWidth,
-    templeLength,
+    frameWidth: Number(req.body.frameWidth),
+    lensWidth: Number(req.body.lensWidth),
+    bridgeWidth: Number(req.body.bridgeWidth),
+    templeLength: Number(req.body.templeLength),
 
     // Price
-    mrp,
-    sellingPrice,
+    mrp: Number(req.body.mrp),
+    sellingPrice: Number(req.body.sellingPrice),
 
     // Inventory
-    sku,
-    stock,
+    sku: req.body.sku,
+    stock: Number(req.body.stock),
 
     // Images
     thumbnail,
+    thumbnailPublicId,
+
     images,
+    imagePublicIds,
+
+    // Rating
+    rating: Number(req.body.rating),
+    reviewCount: Number(req.body.reviewCount),
 
     // Flags
-    isFeatured,
-    isBestSeller,
-    isNewArrival,
-    isActive,
+    isFeatured: req.body.isFeatured === "true",
+    isBestSeller: req.body.isBestSeller === "true",
+    isNewArrival: req.body.isNewArrival === "true",
+    isActive: req.body.isActive === "true",
 
     // SEO
-    slug,
-    metaTitle,
-    metaDescription,
-    keywords,
-  } = req.body;
+    slug: req.body.slug,
+    metaTitle: req.body.metaTitle,
+    metaDescription: req.body.metaDescription,
 
-  // Required field validation
-  if (!productName || !brand || !category || !mrp || !sellingPrice) {
-    return res.status(400).json({
-      success: false,
-      message:
-        "productName, brand, category, mrp and sellingPrice are required",
-    });
-  }
-
-  // MRP validation
-  if (sellingPrice > mrp) {
-    return res.status(400).json({
-      success: false,
-      message: "Selling price cannot be greater than MRP",
-    });
-  }
-
-  // Check duplicate productCode
-  if (productCode) {
-    const existingProductCode = await Product.findOne({
-      productCode,
-    });
-
-    if (existingProductCode) {
-      return res.status(409).json({
-        success: false,
-        message: "Product code already exists",
-      });
-    }
-  }
-
-  // Check duplicate SKU
-  if (sku) {
-    const existingSKU = await Product.findOne({
-      sku,
-    });
-
-    if (existingSKU) {
-      return res.status(409).json({
-        success: false,
-        message: "SKU already exists",
-      });
-    }
-  }
-
-  // Check duplicate slug
-  if (slug) {
-    const existingSlug = await Product.findOne({
-      slug,
-    });
-
-    if (existingSlug) {
-      return res.status(409).json({
-        success: false,
-        message: "Slug already exists",
-      });
-    }
-  }
-
-  // Calculate discount
-  const discount = Math.round(((mrp - sellingPrice) / mrp) * 100);
-
-  // Determine stock status
-  const stockStatus = Number(stock || 0) > 0 ? "IN STOCK" : "OUT OF STOCK";
-
-  // Create product
-  const product = new Product({
-    productName,
-    brand,
-    category,
-    subCategory,
-    gender,
-    productCode,
-    description,
-
-    // Frame
-    frameType,
-    frameShape,
-    frameMaterial,
-    frameColor,
-    rimType,
-
-    // Lens
-    lensType,
-    lensMaterial,
-    lensColor,
-    coating,
-    uvProtection,
-    blueLightProtection,
-
-    // Dimensions
-    frameWidth,
-    lensWidth,
-    bridgeWidth,
-    templeLength,
-
-    // Price
-    mrp,
-    sellingPrice,
-    discount,
-
-    // Inventory
-    sku,
-    stock: stock || 0,
-    stockStatus,
-
-    // Images
-    thumbnail,
-    images,
-
-    // Reviews
-    rating: 0,
-    reviewCount: 0,
-
-    // Flags
-    isFeatured,
-    isBestSeller,
-    isNewArrival,
-    isActive,
-
-    // SEO
-    slug,
-    metaTitle,
-    metaDescription,
     keywords,
   });
 
-  // Save product
-  const savedProduct = await product.save();
-
-  // Response
-  return res.status(201).json({
+  res.status(201).json({
     success: true,
     message: "Product created successfully",
-    product: savedProduct,
+    product,
   });
 });
 

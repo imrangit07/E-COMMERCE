@@ -1,6 +1,7 @@
 import express from "express";
 import dotenv from "dotenv";
 import logger from "morgan";
+import cors from 'cors'
 
 dotenv.config({
   path: "./config/.env",
@@ -10,6 +11,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 import router from "./Routers/ProductRoutes.js";
+import UserRoute from "./Routers/UserRoutes.js";
 import ErrorHandler from "./Utils/ErrorHandler.js";
 import ConnectDB from "./Models/ConnectDB.js";
 import { GenError } from "./Middlewares/GenError.js";
@@ -19,8 +21,11 @@ ConnectDB();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+app.use(cors())
+
 app.use(logger("tiny"));
 app.use("/api/products", router);
+app.use("/api/user", UserRoute);
 
 // ERROR HANDLING
 

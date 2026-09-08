@@ -12,8 +12,23 @@ import {
   searchProducts,
 } from "../Controllers/ProductController.js";
 
+import UploadImages from "../Middlewares/UploadImages.js";
+
 // POST
-router.post("/create-product", createProduct);
+router.post(
+  "/create-product",
+  UploadImages.fields([
+    {
+      name: "thumbnail",
+      maxCount: 1,
+    },
+    {
+      name: "images",
+      maxCount: 10,
+    },
+  ]),
+  createProduct
+);
 
 // GET ALL
 router.get("/", getAllProduct);
