@@ -9,8 +9,11 @@ import banner from "/banner/FLR1IN.webp";
 import banner1 from "/banner/ban-buy1-get1.webp";
 import dobanner from "/banner/DoMore.webp";
 import Hero from "./Hero";
+import { BACKEND_URL } from "../../config/config";
 
 const Home = () => {
+  console.log(BACKEND_URL);
+  
   return (
     <>
       <div>

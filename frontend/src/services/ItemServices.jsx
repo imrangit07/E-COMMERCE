@@ -12,9 +12,23 @@ export const itemApi = createApi({
     getItems: builder.query({
       query: () => "api/products/",
     }),
+
+    getByCatAndShape: builder.query({
+      query: ({ category, frameShape }) => {
+        const params = new URLSearchParams();
+
+        if (category) {
+          params.append("category", category);
+        }
+
+        if (frameShape) {
+          params.append("frameShape", frameShape);
+        }
+
+        return `api/products/glasses?${params.toString()}`;
+      },
+    }),
   }),
 });
 
-export const {
-  useGetItemsQuery,
-} = itemApi;
+export const { useGetItemsQuery, useGetByCatAndShapeQuery } = itemApi;

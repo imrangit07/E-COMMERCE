@@ -1,5 +1,6 @@
 import { Product } from "../Models/ProductModel.js";
 import AsyncErrors from "../Middlewares/AsyncErrors.js";
+import cloudinary from "../config/Cloudinary.js";
 
 const createProduct = AsyncErrors(async (req, res) => {
   const thumbnailFile = req.files?.thumbnail?.[0];
@@ -162,41 +163,258 @@ const getAllProduct = AsyncErrors(async (req, res) => {
 const updateProduct = AsyncErrors(async (req, res) => {
   const { id } = req.params;
 
-  const updateData = {
-    ...req.body,
-  };
+  const existingProduct = await Product.findById(id);
 
-  // Check if MRP and sellingPrice are being updated
-  if (updateData.mrp !== undefined && updateData.sellingPrice !== undefined) {
-    if (updateData.sellingPrice > updateData.mrp) {
-      return res.status(400).json({
-        success: false,
-        message: "Selling price cannot be greater than MRP",
-      });
-    }
-
-    // Calculate discount
-    updateData.discount = Math.round(
-      ((updateData.mrp - updateData.sellingPrice) / updateData.mrp) * 100,
-    );
-  }
-
-  // Update stock status
-  if (updateData.stock !== undefined) {
-    updateData.stockStatus =
-      Number(updateData.stock) > 0 ? "IN STOCK" : "OUT OF STOCK";
-  }
-
-  const product = await Product.findByIdAndUpdate(id, updateData, {
-    new: true,
-    runValidators: true,
-  });
-
-  if (!product) {
+  if (!existingProduct) {
     return res.status(404).json({
       success: false,
       message: "Product not found",
     });
+  }
+
+  const oldThumbnailPublicId =
+    existingProduct.thumbnailPublicId;
+
+  const oldImagePublicIds =
+    existingProduct.imagePublicIds || [];
+
+  const updateData = {};
+
+  if (req.body.productName !== undefined)
+    updateData.productName = req.body.productName;
+
+  if (req.body.brand !== undefined)
+    updateData.brand = req.body.brand;
+
+  if (req.body.category !== undefined)
+    updateData.category = req.body.category;
+
+  if (req.body.subCategory !== undefined)
+    updateData.subCategory = req.body.subCategory;
+
+  if (req.body.gender !== undefined)
+    updateData.gender = req.body.gender;
+
+  if (req.body.productCode !== undefined)
+    updateData.productCode = req.body.productCode;
+
+  if (req.body.description !== undefined)
+    updateData.description = req.body.description;
+
+  if (req.body.frameType !== undefined)
+    updateData.frameType = req.body.frameType;
+
+  if (req.body.frameShape !== undefined)
+    updateData.frameShape = req.body.frameShape;
+
+  if (req.body.frameMaterial !== undefined)
+    updateData.frameMaterial = req.body.frameMaterial;
+
+  if (req.body.frameColor !== undefined)
+    updateData.frameColor = req.body.frameColor;
+
+  if (req.body.rimType !== undefined)
+    updateData.rimType = req.body.rimType;
+
+  if (req.body.lensType !== undefined)
+    updateData.lensType = req.body.lensType;
+
+  if (req.body.lensMaterial !== undefined)
+    updateData.lensMaterial = req.body.lensMaterial;
+
+  if (req.body.lensColor !== undefined)
+    updateData.lensColor = req.body.lensColor;
+
+  if (req.body.coating !== undefined) {
+    updateData.coating = Array.isArray(req.body.coating)
+      ? req.body.coating
+      : [req.body.coating];
+  }
+
+  if (req.body.uvProtection !== undefined)
+    updateData.uvProtection =
+      req.body.uvProtection === "true";
+
+  if (req.body.blueLightProtection !== undefined)
+    updateData.blueLightProtection =
+      req.body.blueLightProtection === "true";
+
+  if (req.body.isFeatured !== undefined)
+    updateData.isFeatured =
+      req.body.isFeatured === "true";
+
+  if (req.body.isBestSeller !== undefined)
+    updateData.isBestSeller =
+      req.body.isBestSeller === "true";
+
+  if (req.body.isNewArrival !== undefined)
+    updateData.isNewArrival =
+      req.body.isNewArrival === "true";
+
+  if (req.body.isActive !== undefined)
+    updateData.isActive =
+      req.body.isActive === "true";
+
+  if (req.body.frameWidth !== undefined)
+    updateData.frameWidth =
+      Number(req.body.frameWidth);
+
+  if (req.body.lensWidth !== undefined)
+    updateData.lensWidth =
+      Number(req.body.lensWidth);
+
+  if (req.body.bridgeWidth !== undefined)
+    updateData.bridgeWidth =
+      Number(req.body.bridgeWidth);
+
+  if (req.body.templeLength !== undefined)
+    updateData.templeLength =
+      Number(req.body.templeLength);
+
+  if (req.body.mrp !== undefined)
+    updateData.mrp = Number(req.body.mrp);
+
+  if (req.body.sellingPrice !== undefined)
+    updateData.sellingPrice =
+      Number(req.body.sellingPrice);
+
+  if (req.body.sku !== undefined)
+    updateData.sku = req.body.sku;
+
+  if (req.body.stock !== undefined) {
+    updateData.stock = Number(req.body.stock);
+
+    updateData.stockStatus =
+      Number(req.body.stock) > 0
+        ? "IN STOCK"
+        : "OUT OF STOCK";
+  }
+
+  if (req.body.rating !== undefined)
+    updateData.rating = Number(req.body.rating);
+
+  if (req.body.reviewCount !== undefined)
+    updateData.reviewCount =
+      Number(req.body.reviewCount);
+
+  if (req.body.slug !== undefined)
+    updateData.slug = req.body.slug;
+
+  if (req.body.metaTitle !== undefined)
+    updateData.metaTitle = req.body.metaTitle;
+
+  if (req.body.metaDescription !== undefined)
+    updateData.metaDescription =
+      req.body.metaDescription;
+
+  if (req.body.keywords !== undefined) {
+    updateData.keywords = Array.isArray(
+      req.body.keywords
+    )
+      ? req.body.keywords
+      : [req.body.keywords];
+  }
+
+  const finalMRP =
+    updateData.mrp !== undefined
+      ? updateData.mrp
+      : existingProduct.mrp;
+
+  const finalSellingPrice =
+    updateData.sellingPrice !== undefined
+      ? updateData.sellingPrice
+      : existingProduct.sellingPrice;
+
+  if (finalMRP <= 0) {
+    return res.status(400).json({
+      success: false,
+      message: "MRP must be greater than 0",
+    });
+  }
+
+  if (finalSellingPrice < 0) {
+    return res.status(400).json({
+      success: false,
+      message: "Selling price cannot be negative",
+    });
+  }
+
+  if (finalSellingPrice > finalMRP) {
+    return res.status(400).json({
+      success: false,
+      message: "Selling price cannot be greater than MRP",
+    });
+  }
+
+  if (
+    updateData.mrp !== undefined ||
+    updateData.sellingPrice !== undefined
+  ) {
+    updateData.discount = Math.round(
+      ((finalMRP - finalSellingPrice) / finalMRP) * 100
+    );
+  }
+
+  const newThumbnailFile =
+    req.files?.thumbnail?.[0];
+
+  const newImageFiles =
+    req.files?.images || [];
+
+  if (newThumbnailFile) {
+    updateData.thumbnail =
+      newThumbnailFile.path;
+
+    updateData.thumbnailPublicId =
+      newThumbnailFile.filename;
+  }
+
+  if (newImageFiles.length > 0) {
+    updateData.images = newImageFiles.map(
+      (file) => file.path
+    );
+
+    updateData.imagePublicIds =
+      newImageFiles.map(
+        (file) => file.filename
+      );
+  }
+
+  Object.assign(
+    existingProduct,
+    updateData
+  );
+
+  const product =
+    await existingProduct.save();
+
+  if (
+    newThumbnailFile &&
+    oldThumbnailPublicId
+  ) {
+    await cloudinary.uploader.destroy(
+      oldThumbnailPublicId,
+      {
+        resource_type: "image",
+      }
+    );
+  }
+
+  if (
+    newImageFiles.length > 0 &&
+    oldImagePublicIds.length > 0
+  ) {
+    await Promise.all(
+      oldImagePublicIds.map(
+        (publicId) =>
+          cloudinary.uploader.destroy(
+            publicId,
+            {
+              resource_type: "image",
+            }
+          )
+      )
+    );
   }
 
   res.status(200).json({
@@ -435,6 +653,32 @@ const searchProducts = AsyncErrors(async (req, res) => {
   });
 });
 
+const getProductsByCatAndShape = AsyncErrors(async (req, res) => {
+  console.log("this is my query", req.query);
+
+  const { category, frameShape } = req.query;
+
+  const filter = {};
+  console.log(category);
+  console.log(frameShape);
+
+  if (category) {
+    filter.category = category;
+  }
+
+  if (frameShape) {
+    filter.frameShape = frameShape;
+  }
+
+  const products = await Product.find(filter);
+
+  res.status(200).json({
+    success: true,
+    count: products.length,
+    products,
+  });
+});
+
 export {
   createProduct,
   getSingleProduct,
@@ -443,4 +687,5 @@ export {
   deleteProduct,
   getProductById,
   searchProducts,
+  getProductsByCatAndShape,
 };

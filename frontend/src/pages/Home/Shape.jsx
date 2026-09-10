@@ -62,7 +62,7 @@ const Shape = () => {
   // Eyeglasses shapes
   const eyeglassShapes = [
     { id: 1, img: EyeglassAviator, alt: "Aviator" },
-    { id: 2, img: EyeglassCateyede, alt: "Cat Eye" },
+    { id: 2, img: EyeglassCateyede, alt: "Cateye" },
     { id: 3, img: EyeglassClubmaster, alt: "Clubmaster" },
     { id: 4, img: EyeglassGeometric, alt: "Geometric" },
     { id: 5, img: EyeglassRectangle, alt: "Rectangle" },

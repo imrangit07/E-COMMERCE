@@ -1,11 +1,15 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
+
+
 import eye from "/images/top/eyeglasses.webp";
 import kid from "/images/top/kidsGlasses.webp";
 import sun from "/images/top/sunglasses.webp";
 import lenses from "/images/top/contactLenses.webp";
 import sale from "/images/top/sale.webp";
 import power from "/images/top/specialPower.webp";
+
+
 
 const TopCategories = () => {
   const navigate = useNavigate();
